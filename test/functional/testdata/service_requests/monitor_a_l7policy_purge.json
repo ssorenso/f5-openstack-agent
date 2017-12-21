@@ -1,0 +1,276 @@
+[
+    {
+        "subnets": {
+            "ffbe98f4-c3a4-41e9-8323-70927e10b6ad": {
+                "service_types": [],
+                "description": "",
+                "enable_dhcp": true,
+                "network_id": "f5dc8492-576b-42e1-a48a-20bd33b268b0",
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "created_at": "2017-12-20T19:38:21Z",
+                "dns_nameservers": [],
+                "updated_at": "2017-12-20T19:39:12Z",
+                "gateway_ip": "10.22.22.1",
+                "ipv6_ra_mode": null,
+                "allocation_pools": [{"start": "10.22.22.2",
+                "end": "10.22.22.38"}],
+                "host_routes": [],
+                "revision_number": 3,
+                "shared": false,
+                "ip_version": 4,
+                "ipv6_address_mode": null,
+                "cidr": "10.22.20.0/22",
+                "project_id": "b41e6d3ea04b488791fc883562af60b4",
+                "id": "ffbe98f4-c3a4-41e9-8323-70927e10b6ad",
+                "subnetpool_id": null,
+                "name": "tst_sub"
+            }
+        },
+        "listeners": [
+            {
+                "l7_policies": [{"id": "8c3734e6-431c-4b84-a615-efffb93e15f1"}],
+                "protocol": "HTTP",
+                "description": "",
+                "default_tls_container_id": null,
+                "snat_pool_name": "Project_b41e6d3ea04b488791fc883562af60b4",
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "admin_state_up": true,
+                "connection_limit": -1,
+                "id": "8300d2b1-d732-4b4e-ac8e-815de8e508a7",
+                "use_snat": true,
+                "protocol_port": 80,
+                "f5_policy": {
+                    "name": "wrapper_policy_8300d2b1-d732-4b4e-ac8e-815de8e508a7",
+                    "rules": [
+                        {
+                            "ordinal": 1,
+                            "conditions": [
+                                {
+                                    "name": "0",
+                                    "request": true,
+                                    "equals": true,
+                                    "host": true,
+                                    "values": ["foodogzoo"],
+                                    "httpHost": true
+                                }
+                            ],
+                            "name": "redirect_to_pool_1",
+                            "actions": [
+                                {
+                                    "forward": true,
+                                    "request": true,
+                                    "name": "0",
+                                    "pool": "/Project_b41e6d3ea04b488791fc883562af60b4/Project_a32b9425-c93f-441f-b668-f84e8b109032"
+                                }
+                            ]
+                        }
+                    ],
+                    "partition": "Project_b41e6d3ea04b488791fc883562af60b4",
+                    "controls": ["forwarding"],
+                    "strategy": "first-match",
+                    "legacy": true,
+                    "requires": ["http"]
+                },
+                "sni_containers": [],
+                "provisioning_status": "ACTIVE",
+                "default_pool_id": "a32b9425-c93f-441f-b668-f84e8b109032",
+                "loadbalancer_id": "8c2f4f01-79de-4ffe-9d4e-fb082d1514dc",
+                "operating_status": "ONLINE",
+                "name": ""
+            }
+        ],
+        "healthmonitors": [
+            {
+                "name": "",
+                "provisioning_status": "ACTIVE",
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "admin_state_up": true,
+                "pool_id": "a32b9425-c93f-441f-b668-f84e8b109032",
+                "delay": 1,
+                "expected_codes": "200",
+                "max_retries": 1,
+                "http_method": "GET",
+                "timeout": 1,
+                "max_retries_down": 3,
+                "url_path": "/",
+                "type": "PING",
+                "id": "59f3a51a-9bc5-42a6-8f1a-916bedb6f004"
+            }
+        ],
+        "members": [],
+        "l7policy_rules": [
+            {
+                "compare_type": "EQUAL_TO",
+                "key": null,
+                "provisioning_status": "PENDING_CREATE",
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "invert": false,
+                "admin_state_up": true,
+                "value": "foodogzoo",
+                "policies": [{"id": "8c3734e6-431c-4b84-a615-efffb93e15f1"}],
+                "type": "HOST_NAME",
+                "id": "68320c5c-408b-407e-8a96-a3ffc9db5b5f",
+                "policy_id": "8c3734e6-431c-4b84-a615-efffb93e15f1"
+            }
+        ],
+        "pools": [
+            {
+                "lb_algorithm": "ROUND_ROBIN",
+                "protocol": "HTTP",
+                "description": "",
+                "provisioning_status": "ACTIVE",
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "l7_policies": [{"id": "8c3734e6-431c-4b84-a615-efffb93e15f1"}],
+                "loadbalancer_id": "8c2f4f01-79de-4ffe-9d4e-fb082d1514dc",
+                "healthmonitor_id": "59f3a51a-9bc5-42a6-8f1a-916bedb6f004",
+                "members": [],
+                "admin_state_up": true,
+                "sessionpersistence": null,
+                "id": "a32b9425-c93f-441f-b668-f84e8b109032",
+                "operating_status": "ONLINE",
+                "name": ""
+            }
+        ],
+        "traffic_group": "/Common/traffic-group-1",
+        "l7policies": [
+            {
+                "redirect_pool_id": "a32b9425-c93f-441f-b668-f84e8b109032",
+                "description": "",
+                "admin_state_up": true,
+                "rules": [{"id": "68320c5c-408b-407e-8a96-a3ffc9db5b5f"}],
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "listener_id": "8300d2b1-d732-4b4e-ac8e-815de8e508a7",
+                "l7policy_rules": [
+                    {
+                        "compare_type": "EQUAL_TO",
+                        "key": null,
+                        "provisioning_status": "PENDING_CREATE",
+                        "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                        "invert": false,
+                        "admin_state_up": true,
+                        "value": "foodogzoo",
+                        "policies": [{"id": "8c3734e6-431c-4b84-a615-efffb93e15f1"}],
+                        "type": "HOST_NAME",
+                        "id": "68320c5c-408b-407e-8a96-a3ffc9db5b5f",
+                        "policy_id": "8c3734e6-431c-4b84-a615-efffb93e15f1"
+                    }
+                ],
+                "action": "REDIRECT_TO_POOL",
+                "position": 1,
+                "provisioning_status": "ACTIVE",
+                "id": "8c3734e6-431c-4b84-a615-efffb93e15f1",
+                "name": ""
+            }
+        ],
+        "networks": {
+            "f5dc8492-576b-42e1-a48a-20bd33b268b0": {
+                "provider:physical_network": null,
+                "ipv6_address_scope": null,
+                "revision_number": 6,
+                "port_security_enabled": true,
+                "mt": 1450,
+                "id": "f5dc8492-576b-42e1-a48a-20bd33b268b0",
+                "router:external": false,
+                "availability_zone_hints": [],
+                "availability_zones": ["nova"],
+                "ipv4_address_scope": null,
+                "shared": false,
+                "project_id": "b41e6d3ea04b488791fc883562af60b4",
+                "status": "ACTIVE",
+                "subnets": ["ffbe98f4-c3a4-41e9-8323-70927e10b6ad"],
+                "description": "",
+                "tags": [],
+                "updated_at": "2017-12-20T19:39:12Z",
+                "route_domain_id": 1,
+                "provider:segmentation_id": 51,
+                "name": "tst_net",
+                "admin_state_up": true,
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "created_at": "2017-12-20T19:36:39Z",
+                "provider:network_type": "vxlan",
+                "vlan_transparent": null
+            }
+        },
+        "loadbalancer": {
+            "vxlan_vteps": [
+                "172.16.4.3",
+                "172.16.4.1",
+                "172.16.4.2"
+            ],
+            "name": "tst_b",
+            "provisioning_status": "ACTIVE",
+            "network_id": "f5dc8492-576b-42e1-a48a-20bd33b268b0",
+            "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+            "admin_state_up": true,
+            "provider": "f5networks",
+            "id": "8c2f4f01-79de-4ffe-9d4e-fb082d1514dc",
+            "gre_vteps": [],
+            "pools": [{"id": "a32b9425-c93f-441f-b668-f84e8b109032"}],
+            "listeners": [{"id": "8300d2b1-d732-4b4e-ac8e-815de8e508a7"}],
+            "vip_port_id": "aff144ac-5c18-4d36-9f7b-6fe13f63c1c7",
+            "network": {
+                "provider:physical_network": null,
+                "ipv6_address_scope": null,
+                "revision_number": 6,
+                "port_security_enabled": true,
+                "mt": 1450,
+                "id": "f5dc8492-576b-42e1-a48a-20bd33b268b0",
+                "router:external": false,
+                "availability_zone_hints": [],
+                "availability_zones": ["nova"],
+                "ipv4_address_scope": null,
+                "shared": false,
+                "project_id": "b41e6d3ea04b488791fc883562af60b4",
+                "status": "ACTIVE",
+                "subnets": ["ffbe98f4-c3a4-41e9-8323-70927e10b6ad"],
+                "description": "",
+                "tags": [],
+                "updated_at": "2017-12-20T19:39:12Z",
+                "route_domain_id": 1,
+                "provider:segmentation_id": 51,
+                "name": "tst_net",
+                "admin_state_up": true,
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "created_at": "2017-12-20T19:36:39Z",
+                "provider:network_type": "vxlan",
+                "vlan_transparent": null
+            },
+            "vip_address": "10.22.22.10%1",
+            "vip_subnet_id": "ffbe98f4-c3a4-41e9-8323-70927e10b6ad",
+            "traffic_group": "traffic-group-1",
+            "vip_port": {
+                "allowed_address_pairs": [],
+                "extra_dhcp_opts": [],
+                "updated_at": "2017-12-21T16:48:33Z",
+                "device_owner": "network:f5lbaasv2",
+                "revision_number": 7,
+                "port_security_enabled": true,
+                "binding:profile": {},
+                "fixed_ips": [
+                    {
+                        "subnet_id": "ffbe98f4-c3a4-41e9-8323-70927e10b6ad",
+                        "ip_address": "10.22.22.10"
+                    }
+                ],
+                "id": "aff144ac-5c18-4d36-9f7b-6fe13f63c1c7",
+                "security_groups": ["5b236fe3-22b0-48e6-92c7-dca278753988"],
+                "binding:vif_details": {},
+                "binding:vif_type": "binding_failed",
+                "mac_address": "fa:16:3e:f7:86:50",
+                "project_id": "b41e6d3ea04b488791fc883562af60b4",
+                "status": "DOWN",
+                "binding:host_id": "newton-875ae684-master-0:1274aa05-7374-5198-bd11-fc322e466f7d",
+                "description": null,
+                "device_id": "8c2f4f01-79de-4ffe-9d4e-fb082d1514dc",
+                "name": "loadbalancer-8c2f4f01-79de-4ffe-9d4e-fb082d1514dc",
+                "admin_state_up": true,
+                "network_id": "f5dc8492-576b-42e1-a48a-20bd33b268b0",
+                "tenant_id": "b41e6d3ea04b488791fc883562af60b4",
+                "created_at": "2017-12-21T16:48:31Z",
+                "binding:vnic_type": "baremetal"
+            },
+            "operating_status": "ONLINE",
+            "description": ""
+        }
+    }
+]

@@ -68,6 +68,11 @@ class ResourceValidator(object):
         assert self.bigip.resource_exists(
             ResourceType.pool, pool_name, partition=folder)
 
+    def assert_policy_deleted(self, listener, folder):
+        policy_name = '{0}_{1}'.format(self.policy_prefix, listener['id'])
+        assert self.bigip.resource_exists(
+            ResourceType.l7policy, policy_name, partition=folder)
+
     def assert_policy_valid(self, listener, folder):
         policy_name = '{0}_{1}'.format(self.policy_prefix, listener['id'])
         assert self.bigip.resource_exists(

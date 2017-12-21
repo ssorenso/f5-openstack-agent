@@ -13,6 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import f5_openstack_agent.lbaasv2.drivers.bigip.plugin_rpc
 
 import collections
 import netaddr
@@ -37,13 +38,14 @@ def track_call(func):
     return wrapper
 
 
-class FakeRPCPlugin(object):
+class FakeRPCPlugin(
+        f5_openstack_agent.lbaasv2.drivers.bigip.plugin_rpc.LBaaSv2PluginRPC):
 
     def __init__(self, services):
         self._subnets = {}
         self._ports = {}
         self._loadbalancers = {}
-        # The following is a bit of a hack, it allows us to handle 
+        # The following is a bit of a hack, it allows us to handle
         # two types of service objects.  For back compatibility we need to
         # support services-as-lists.
         if isinstance(services, collections.OrderedDict):
@@ -100,6 +102,24 @@ class FakeRPCPlugin(object):
     def get_ports_for_mac_addresses(self, mac_addresses=list()):
         return list()
 
+    def validate_loadbalancers_state(self, loadbalancers):
+        lb_status = {}
+        for lb_id in loadbalancers:
+            lb_status[lb_id] = 'Unknown'
+        return lb_status
+
+    def validate_listeners_state(self, listeners):
+        li_status = {}
+        for li_id in listeners:
+            li_status[li_id] = 'Unknown'
+        return li_status
+
+    def validate_pools_state(self, pools):
+        pool_status = {}
+        for pool_id in pools:
+            pool_status[pool_id] = 'Unknown'
+        return pool_status
+
     @track_call
     def create_port_on_subnet(self,
                               subnet_id=None,
@@ -120,7 +140,7 @@ class FakeRPCPlugin(object):
         if fixed_address_count != 1:
             raise InvalidArgumentError
         if vnic_type != "baremetal":
-            raise InvalideArgumentError
+            raise InvalidArgumentError
 
         ip_address = next(self._subnets[subnet_id])
 
@@ -195,14 +215,14 @@ class FakeRPCPlugin(object):
 
     @track_call
     def update_l7policy_status(self, l7policy_id,
-                                     provisioning_status="ERROR",
-                                     operating_status="OFFLINE"):
+                               provisioning_status="ERROR",
+                               operating_status="OFFLINE"):
         pass
 
     @track_call
     def update_l7rule_status(self, l7rule_id, l7policy_id,
-                                   provisioning_status="ERROR",
-                                   operating_status="OFFLINE"):
+                             provisioning_status="ERROR",
+                             operating_status="OFFLINE"):
         pass
 
     @track_call
