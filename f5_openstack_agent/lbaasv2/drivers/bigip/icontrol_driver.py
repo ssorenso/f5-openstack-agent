@@ -1208,7 +1208,7 @@ class iControlDriver(LBaaSBaseDriver):
                 tenant_id = folder[len(adapter_prefix):]
                 if str(folder).startswith(adapter_prefix):
                     resources = map(
-                        lambda x: resource_helper.BigIpResourceHelper(
+                        lambda x: resource_helper.BigIPResourceHelper(
                             getattr(resource_helper.ResourceType, x)),
                         monitor_types)
                     for resource in resources:
@@ -1272,7 +1272,7 @@ class iControlDriver(LBaaSBaseDriver):
             for folder in folders:
                 tenant_id = folder[len(self.service_adapter.prefix):]
                 if str(folder).startswith(self.service_adapter.prefix):
-                    resource = resource_helper.BigIpResourceHelper(
+                    resource = resource_helper.BigIPResourceHelper(
                         resource_helper.ResourceType.l7policy)
                     deployed_l7_policys = resource.get_resources(bigip, folder)
                     if deployed_l7_policys:
