@@ -304,7 +304,7 @@ class MockBuilderBase(object):
         raise NotImplementedError("This is only an example")
         if not target:
             target = MockBuilderBase.fully_mocked_target()
-        self._mockfactory(target.method, static, call_cnt, expected_args,
+        self._mockfactory(target, 'method', static, call_cnt, expected_args,
                           kwargs)
         return target
 
