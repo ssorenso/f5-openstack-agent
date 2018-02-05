@@ -56,6 +56,7 @@ def connect_2_bigip():
 
 @pytest.fixture(scope='module')
 def makelogdir(request):
+    """Makes a log directory"""
     logtime = '%0.0f' % time.time()
     dirname = os.path.dirname(request.module.__file__)
     modfname = request.module.__name__
@@ -76,6 +77,7 @@ def _get_nolevel_handler(logname):
 
 
 def remove_elements(bigip, uris, vlan=False):
+    """Removes elements from bigip as per its uris provided"""
     vxlan_tunnel = ['mgmt/tm/net/tunnels/tunnel/', 'tunnel-vxlan']
     for t in bigip.tm.net.fdb.tunnels.get_collection():
         if t.name != 'http-tunnel' and t.name != 'socks-tunnel':
@@ -105,12 +107,14 @@ def remove_elements(bigip, uris, vlan=False):
 
 
 def setup_neutronless_test(request, bigip, makelogdir, vlan=False):
+    """Sets up neutronless test"""
     pretest_snapshot = frozenset(register_device(bigip))
 
     logname = os.path.join(makelogdir, request.function.__name__)
     loghandler = _get_nolevel_handler(logname)
 
     def remove_test_created_elements():
+        """Removes test elements from neutronless test (teardown)"""
         posttest_registry = register_device(bigip)
         created = frozenset(posttest_registry) - pretest_snapshot
         remove_elements(bigip, created, vlan)
@@ -123,6 +127,7 @@ def setup_neutronless_test(request, bigip, makelogdir, vlan=False):
 
 @pytest.fixture
 def configure_icd():
+    """Configures the ICD"""
     class ConfFake(object):
         '''minimal fake config object to replace oslo with controlled params'''
         def __init__(self, params):

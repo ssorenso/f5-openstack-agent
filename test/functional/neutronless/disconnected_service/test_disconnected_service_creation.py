@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 # Copyright 2016 F5 Networks Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# A lot of our tests may need to disable the following pylint features...
+# For importing symbols and distilutils...
+# pylint: disable=no-name-in-module, import-error, no-member
+# For using pytest fixtures...
+# pylint: disable=redefined-outer-name, protected-access, unused-argument,
+# pylint: disable=pointless-string-statement, too-many-locals, unused-variable
+
 # std lib std fmt
 import json
 import logging
@@ -267,6 +275,7 @@ ERROR_MSG_TIMEOUT = 'TIMEOUT: failed to connect '
 
 
 def create_default_mock_rpc_plugin():
+    """Creates default mock plugin_rpc"""
     mock_rpc_plugin = mock.MagicMock(name='mock_rpc_plugin')
     mock_rpc_plugin.get_port_by_name.return_value = [
         {'fixed_ips': [{'ip_address': '10.2.2.134'}]}
@@ -275,7 +284,8 @@ def create_default_mock_rpc_plugin():
 
 
 def configure_icd(icd_config, create_mock_rpc):
-    class ConfFake(object):
+    """Configures fake icontrol-driver"""
+    class ConfFake(object):  # pylint: disable=too-few-public-methods
         '''minimal fake config object to replace oslo with controlled params'''
         def __init__(self, params):
             self.__dict__ = params
@@ -328,6 +338,7 @@ def setup_l2adjacent_test(request, makelogdir, connect_2_bigip):
 
 def handle_init_registry(bigip, icd_configuration,
                          create_mock_rpc=create_default_mock_rpc_plugin):
+    """Handles initial registry"""
     LOG.debug(type(bigip))
     init_registry = register_device(bigip)
     icontroldriver = configure_icd(icd_configuration, create_mock_rpc)
@@ -341,6 +352,7 @@ def handle_init_registry(bigip, icd_configuration,
 
 def test_featureoff_withsegid_lb(track_bigip_cfg, setup_l2adjacent_test,
                                  bigip):
+    """Test featureoff with segid lb"""
     icontroldriver, start_registry = handle_init_registry(bigip, FEATURE_OFF)
     service = deepcopy(SEGID_CREATELB)
 
@@ -455,6 +467,7 @@ def test_featureoff_nosegid_lb(track_bigip_cfg, setup_l2adjacent_test,
 
 def test_featureoff_nosegid_listener(track_bigip_cfg, setup_l2adjacent_test,
                                      bigip):
+    """Test featureoff with no segid listener"""
     icontroldriver, start_registry = handle_init_registry(bigip, FEATURE_OFF)
     service = deepcopy(NOSEGID_CREATELISTENER)
     logcall(setup_l2adjacent_test,
@@ -552,7 +565,9 @@ def test_nosegid_listener(track_bigip_cfg, setup_l2adjacent_test,
 @pytest.mark.skip(reason="The polling will occur in the agent")
 def test_nosegid_listener_timeout(track_bigip_cfg, setup_l2adjacent_test,
                                   bigip):
+    """Test listener timeout with no segid"""
     def create_mock_rpc_plugin():
+        """Create a mocked rpc plugin"""
         mock_rpc_plugin = mock.MagicMock(name='mock_rpc_plugin')
         mock_rpc_plugin.get_port_by_name.return_value = [
             {'fixed_ips': [{'ip_address': '10.2.2.134'}]}
@@ -617,8 +632,12 @@ def test_nosegid_listener_timeout(track_bigip_cfg, setup_l2adjacent_test,
 @pytest.mark.skip(reason="The polling will occur in the agent")
 def test_nosegid_to_segid(track_bigip_cfg, setup_l2adjacent_test,
                           connect_2_bigip):
+    """Tests no seg id to seg id transition"""
     def create_swing_mock_rpc_plugin():
-        # set up mock to return segid after 3 polling attempts
+        """Creates a mock plugin_rpc
+
+        In addition, it sets up mock to return segid after 3 polling attempts.
+        """
         mock_rpc_plugin = mock.MagicMock(name='swing_mock_rpc_plugin')
         mock_rpc_plugin.get_port_by_name.return_value = [
             {'fixed_ips': [{'ip_address': '10.2.2.134'}]}
@@ -732,7 +751,9 @@ def test_featureoff_grm_lb(track_bigip_cfg, setup_l2adjacent_test,
 
 def test_featureoff_grm_listener(track_bigip_cfg, setup_l2adjacent_test,
                                  bigip):
+    """Tests featureoff grm listener"""
     def create_mock_rpc_plugin():
+        """Creates a mocked plugin_rpc with get_all_loadbalancers mocked"""
         mock_rpc_plugin = mock.MagicMock(name='mock_rpc_plugin')
         mock_rpc_plugin.get_port_by_name.return_value = [
             {'fixed_ips': [{'ip_address': '10.2.2.134'}]}
@@ -764,6 +785,7 @@ def test_featureoff_grm_listener(track_bigip_cfg, setup_l2adjacent_test,
 
 def test_featureoff_nosegid_common_lb_net(track_bigip_cfg,
                                           setup_l2adjacent_test, bigip):
+    """Tests featureoff no seg id on Common partition with a loadbalancer"""
     icontroldriver, start_registry = \
         handle_init_registry(bigip, FEATURE_OFF_COMMON_NET)
     service = deepcopy(NOSEGID_CREATELB)
