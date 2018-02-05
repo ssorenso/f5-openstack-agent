@@ -19,6 +19,7 @@ import os
 import pytest
 import time
 
+from f5.bigip import ManagementRoot
 from f5.utils.testutils.registrytools import order_by_weights
 from f5.utils.testutils.registrytools import register_device
 from icontrol.exceptions import iControlUnexpectedHTTPError
@@ -45,6 +46,14 @@ AGENT_LB_DEL_ORDER = {'/mgmt/tm/ltm/virtual/': 1,
                       '/mgmt/tm/sys/folder': 16}
 
 
+@pytest.fixture
+def connect_2_bigip():
+    """Connects to the bigip in symbols"""
+    return ManagementRoot(pytest.symbols.bigip_mgmt_ip_public,
+                          pytest.symbols.bigip_username,
+                          pytest.symbols.bigip_password)
+
+
 @pytest.fixture(scope='module')
 def makelogdir(request):
     logtime = '%0.0f' % time.time()
@@ -67,6 +76,7 @@ def _get_nolevel_handler(logname):
 
 
 def remove_elements(bigip, uris, vlan=False):
+    vxlan_tunnel = ['mgmt/tm/net/tunnels/tunnel/', 'tunnel-vxlan']
     for t in bigip.tm.net.fdb.tunnels.get_collection():
         if t.name != 'http-tunnel' and t.name != 'socks-tunnel':
             t.update(records=[])
@@ -84,9 +94,8 @@ def remove_elements(bigip, uris, vlan=False):
                 # If testing VLAN (with vCMP) the fdb tunnel cannot be deleted
                 # directly. It goes away when the net tunnel is deleted
                 continue
-            elif sc == 400\
-              and 'mgmt/tm/net/tunnels/tunnel/' in selfLink\
-              and 'tunnel-vxlan' in selfLink:
+            elif sc == 400 and \
+                    all(map(lambda x: x in selfLink, vxlan_tunnel)):
                 for t in bigip.tm.net.fdb.tunnels.get_collection():
                     if t.name != 'http-tunnel' and t.name != 'socks-tunnel':
                         t.update(records=[])
