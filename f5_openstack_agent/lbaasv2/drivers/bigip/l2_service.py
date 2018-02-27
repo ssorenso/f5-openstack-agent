@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import constants_v2
 import random
 from time import time
 
@@ -351,10 +352,15 @@ class L2ServiceBuilder(object):
                    'profile': 'vxlan_ovs',
                    'key': network['provider:segmentation_id'],
                    'localAddress': bigip.local_ip,
-                   'description': network['id'],
+                   'network_id': network['id'],
                    'route_domain_id': network['route_domain_id']}
         try:
-            self.network_helper.create_multipoint_tunnel(bigip, payload)
+            self.driver.tunnel_handler.create_multipoint_tunnel(
+                bigip, payload)
+            if payload['partition'] != constants_v2.DEFAULT_PARTITION:
+                self.network_helper.add_vlan_to_domain_by_id(
+                    bigip, payload['name'], payload['partition'],
+                    payload['route_domain_id'])
         except Exception as err:
             LOG.exception("%s", err.message)
             raise f5_ex.VXLANCreationException(
@@ -383,10 +389,15 @@ class L2ServiceBuilder(object):
                    'profile': 'gre_ovs',
                    'key': network['provider:segmentation_id'],
                    'localAddress': bigip.local_ip,
-                   'description': network['id'],
+                   'network_id': network['id'],
                    'route_domain_id': network['route_domain_id']}
         try:
-            self.network_helper.create_multipoint_tunnel(bigip, payload)
+            self.driver.tunnel_handler.create_multipoint_tunnel(
+                bigip, payload)
+            if payload['partition'] != constants_v2.DEFAULT_PARTITION:
+                self.network_helper.add_vlan_to_domain_by_id(
+                    bigip, payload['name'], payload['partition'],
+                    payload['route_domain_id'])
         except Exception as err:
             LOG.exception("%s", err.message)
             raise f5_ex.VXLANCreationException(

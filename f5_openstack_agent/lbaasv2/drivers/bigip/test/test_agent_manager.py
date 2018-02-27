@@ -17,14 +17,14 @@
 import mock
 import pytest
 
-import conftest
-import test_icontrol_driver
-import test_plugin_rpc
-
 from f5_openstack_agent.lbaasv2.drivers.bigip import agent_manager
 
 import class_tester_base_class
+import conftest
 import mock_builder_base_class
+import test_icontrol_driver
+import test_network_cache_handler
+import test_plugin_rpc
 
 
 @pytest.fixture
@@ -74,7 +74,9 @@ class TestLbaasAgentManagerMockBuilder(mock_builder_base_class.MockBuilderBase,
     # non-instantiated
     _other_builders = dict(
         lbdriver=test_icontrol_driver.TestiControlDriverMockBuilder,
-        plugin_rpc=test_plugin_rpc.TestPluginRpcMockBuilder)
+        plugin_rpc=test_plugin_rpc.TestPluginRpcMockBuilder,
+        network_cache_handler=test_network_cache_handler.
+        NetworkCacheHandlerMockBuilder)
 
     @staticmethod
     def mocked_target(*args):
@@ -104,20 +106,18 @@ class TestLbaasAgentManagerMockBuilder(mock_builder_base_class.MockBuilderBase,
         non-mocks.  Please see conftest.MockBuilder for details.
         """
         # Mock() objects here should be filled in with the appropriate mocks...
+        super(TestLbaasAgentManagerMockBuilder, self).fully_mocked_target(
+            mocked_target)
         mocked_target.context = 'context'
         mocked_target.serializer = None
         mocked_target.cache = mock.Mock()
         mocked_target.last_resync = mock.Mock()
         mocked_target.needs_resync = False
-        mocked_target.plugin_rpc = \
-            self.other_builders['plugin_rpc'].new_fully_mocked_target()
         mocked_target.tunnel_rpc = mock.Mock()
         mocked_target.l2_pop_rpc = mock.Mock()
         mocked_target.state_rpc = mock.Mock()
         mocked_target.pending_services = {}
         mocked_target.service_resync_interval = 5
-        mocked_target.lbdriver = \
-            self.other_builders['lbdriver'].new_fully_mocked_target()
         mocked_target.agent_host = 'conf.host:agent_hash'
         agent_configurations = (
             {'environment_prefix': 'environment_prefix',
@@ -594,3 +594,115 @@ class TestLbaasAgentManager(LBaasAgentManagerMocker,
                 side_effect=_calls_side_effect)
 
         down_to_plugin_rpc_functional(target, standalone_builder, svc)
+
+    def test_bb_network_cache(self, service_with_loadbalancer,
+                              standalone_builder, fully_mocked_target):
+        """Performs a BB test against network_cache functionality
+
+        This is a feature black-box test that ends at the SDK.
+
+        This test will perform the following:
+            * Dope a "BIG-IP" mock with a tunnel
+            * Check that the network_cache equates to expected based upon
+                doped BIG-IP's tunnel values
+        """
+        svc = service_with_loadbalancer
+        target = fully_mocked_target
+
+        partition = "Project_{tenant_id}".format(svc['loadbalancer'])
+        network_id = svc['loadbalancer']['vip_network_id']
+        svc['networks'][0][network_id]['provider:segmentation_id'] = 58
+        fake_tunnel = 'tunnel-vxlan-{}'.format('58')
+        bigip = mock.Mock()
+        bigip.hostname = 'host'
+        get_collection = mock.Mock()
+        vxlan_tunnel = mock.Mock()
+        vxlan_tunnel.description = partition
+        vxlan_tunnel.name = fake_tunnel
+        get_collection.return_value = [vxlan_tunnel]
+        bigip.tm.net.fdb.tunnels.get_collection = get_collection
+        target.lbdriver._iControlDriver__bigips = [bigip]
+        # assign expected values and test...
+        expected_network_cache = {
+            network_id: {'58': [{'host': 'host', 'partition': partition}]}}
+        target.update_network_cache()
+        assert target.network_cache_handler.network_cache == \
+            expected_network_cache
+
+    def test_bb_l2_population(self, service_with_member, standalone_builder,
+                              fully_mocked_target):
+        """Performs a L2 Population test against valid fdb_entry
+
+        This is a feature black-box test that ends at the SDK.
+
+        This test will perform the following:
+            * Dope a "BIG-IP" mock with a tunnel
+            * Dope the network_cache with a tunnel
+            * Test the FdbBuilder via AgentManager with the orchestration of
+                a fdb_entry
+        """
+
+        args = [fully_mocked_target, service_with_member, standalone_builder]
+
+        self.modify_service_with_vxlan(args[1])
+
+        def fake_bigip(target, svc):
+            partition = 'Project_{tenant_id}'.format(svc['loadbalancer'])
+            fake_bigip = mock.Mock()
+            target.lbaas._iControlDriver__bigips = {'host': fake_bigip}
+            fake_bigip.hostname = 'host'
+            tm_arp = mock.Mock()
+            arp = mock.Mock()
+            tm_tunnel = mock.Mock()
+            tunnel = mock.Mock()
+            records = [{'name': 'foozoo',
+                        'endpoint': '201.0.155.1'},
+                       {'name': 'doofoo',
+                        'endpoint': '201.0.155.2'}]
+            tunnel.records = records
+            tm_tunnel.load.return_value = tunnel
+            tm_tunnel.exists = True
+            tm_arp.load.return_value = arp
+            tm_arp.exists.reurn_value = True
+            fake_bigip.status = 'active'
+            fake_bigip.tm.net.fdb.tunnels.tunnel = tm_tunnel
+            fake_bigip.tm.net.fdb.tunnels.arp = tm_arp
+            # generate the fake network cache...
+            fake_cache = dict()
+            for network_dict in svc['networks']:
+                network_id = network_dict.keys()[0]
+                network = network_dict[network_id]
+                fake_cache[network_id] = {
+                    network['provider:segmentation_id']:
+                    [{'host': 'host', 'partition': partition}]}
+            # begin doping target...
+            target.lbdriver._iControlDriver__bigips = [fake_bigip]
+            target.network_cache_handler.network_cache = fake_cache.copy()
+            # short-hand things...
+            [fake_bigip.tm_arp, fake_bigip.tm_tunnel, fake_bigip.arp,
+             fake_bigip.tm_tunnel] = [tm_arp, tm_tunnel, arp, tunnel]
+            fake_bigip.partition = partition
+            return fake_bigip
+
+        def test_add(target, svc, builder):
+            bigip = fake_bigip(target, svc)
+            partition = bigip.partition
+            network_id = svc['loadbalancer']['network_id']
+            fake_mac = '92:37:a2:b2:12:38'
+            vtep_ip = '201.0.155.5'
+            arp_address = '10.2.1.2'
+            fdb_entry = {
+                network_id: {
+                    'network_type': 'vxlan',
+                    'ports': [{arp_address: [[fake_mac, vtep_ip]]}],
+                    'segment_id': 23}}
+            target.add_fdb_entries(fdb_entry)
+            vtep_entry = dict(name=fake_mac, endpoint=vtep_ip)
+            record = list(bigip.tunnel.record)
+            record.append(vtep_entry)
+            bigip.tunnel.modify.assert_called_with(record=record)
+            bigip.arp.create.assert_called_with(
+                ip_address=arp_address, mac_address=fake_mac,
+                partition=partition)
+
+        test_add(*args)

@@ -41,6 +41,28 @@ class ClassTesterBase(object):
     """
     builder = mock_builder_base_class.MockBuilderBase
 
+    def modify_service_with_vxlan(self, svc, same_segment=True):
+        """A service request object decorator that adds vxlan data to networks
+
+        This will go through a service request's networks and add vxlan data
+        to each starting with a segmentation id of 23 iterating upward if
+        same_segment remains False.
+
+        Options:
+            same_segment: bool - if False, then segmentation_id is incremented
+        Required:
+            svc - the service object being wrapped.
+        """
+        vxlan_data = {'provider:network_type': 'vxlan',
+                      'provider:physical_network': None,
+                      'provider:segmentation_id': 23}
+        for network_id_dict in svc['networks']:
+            network_id = network_id_dict.keys()[0]
+            network = network_id_dict[network_id]
+            network.update(vxlan_data)
+            if not same_segment:
+                vxlan_data['provider:segmentation_id'] += 1
+
     def list_currently_mocked(self):
         """A user-friendly pretty-printer of the current set of mocks given
 
@@ -76,7 +98,7 @@ TargetMod: {}
 
     # fixtures:
     @pytest.fixture
-    def standalone_builder(self):
+    def standalone_builder(self, requests):
         """Returns the test module used's MockBuilder's standalone builder
 
         This method will attempt to call the builder's standalone_builder's
@@ -88,6 +110,7 @@ TargetMod: {}
         if not standalone_builder:
             standalone_builder = self.builder.standalone_builder()
             self.my_builder = standalone_builder
+            requests.addfinalizer(self.my_builder.teardown)
         return standalone_builder
 
     @classmethod
@@ -134,13 +157,14 @@ TargetMod: {}
             cls.my_builder.mocked_target)
 
     @pytest.fixture
-    def fully_mocked_target(self):
+    def fully_mocked_target(self, requests):
         if hasattr(self, '_standalone_builder'):
             target = self._standalone_builder.new_fully_mocked_target()
         else:
             a_standalone = self.builder.standalone_builder()
             self._standalone_builder = a_standalone
             target = a_standalone.new_fully_mocked_target()
+            requests.add_finalizer(a_standalone)
         return target
 
     @classmethod

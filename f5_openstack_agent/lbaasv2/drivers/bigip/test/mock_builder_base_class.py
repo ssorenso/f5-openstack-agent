@@ -16,6 +16,7 @@
 
 import mock
 import pytest
+import weakref
 
 """mock_builder_base_class is a host module for the MockBuilderBase
 
@@ -182,7 +183,7 @@ class MockBuilderBase(object):
                         others[other] = instantiated
         if _my_name:
             # second part of recurse blow-up proofing...
-            _already_instantiated[_my_name] = self
+            _already_instantiated[_my_name] = weakref.proxy(self)
         for attr in others:
             if not isinstance(others[attr], type):
                 continue  # prevents attempting double instantiation TypeError
@@ -191,7 +192,11 @@ class MockBuilderBase(object):
             if hasattr(my_builder, 'am_duplicate'):
                 my_builder = my_builder.am_duplicate
             self.other_builders[attr] = my_builder
-            _already_instantiated[attr] = my_builder
+            try:
+                _already_instantiated[attr] = weakref.proxy(my_builder)
+            except TypeError:
+                # already a weakref...
+                _already_instantiated[attr] = my_builder
 
     # builder constructor methods (may need to eventually create constructor
     # classes...
@@ -249,8 +254,13 @@ class MockBuilderBase(object):
         without the raise and by setting the target as a mocked instance of
         the target object in production.
         """
-        raise NotImplementedError("This is an ABCM example")
-        return mock.Mock()
+        if not self._other_builders:
+            raise NotImplementedError("This is an ABCM example")
+        for other in self._other_builders:
+            other_builder = self._other_builders[other]
+            setattr(mocked_target, other,
+                    other_builder.new_fully_mocked_target())
+        return mock_target
 
     def new_fully_mocked_target(self):
         new_mocked_target = self.mocked_target()
@@ -487,3 +497,7 @@ class MockBuilderBase(object):
                 "'{}' does not have an other_builder with method '{}'".format(
                     target, method))
         return matched
+
+    def teardown(self):
+        """This is a catch-net method in case child does not use it"""
+        pass
