@@ -82,8 +82,9 @@ class TestLbaasAgentManagerMockBuilder(mock_builder_base_class.MockBuilderBase,
         _LbaasAgentManager__lbdriver=lbdriver,
         plugin_rpc=test_plugin_rpc.TestPluginRpcMockBuilder,
         network_cache_handler=test_network_cache_handler.
-        TestNetworkCacheHandlerMockBuilder,
-        tunnel_handler=test_tunnel.TestTunnelHandlerMockBuilder)
+        TestNetworkCacheHandlerMockBuilder)
+    _other_builders['_LbaasAgentManager__tunnel_handler'] = \
+        test_tunnel.TestTunnelHandlerMockBuilder
 
     @staticmethod
     def mocked_target(*args):

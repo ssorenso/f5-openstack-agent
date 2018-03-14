@@ -717,13 +717,15 @@ class NetworkServiceBuilder(object):
             loadbalancer['network_id']
             )
 
+        fdb_handle_method = \
+            self.driver.tunnel_handler.\
+            handle_fdbs_from_loadbalancer_and_members
         if delete_loadbalancer or delete_members:
-            self.l2_service.delete_fdb_entries(
-                bigips, delete_loadbalancer, delete_members)
+            fdb_handle_method(bigips, delete_loadbalancer, delete_members,
+                              remove=True)
 
         if update_loadbalancer or update_members:
-            self.l2_service.add_fdb_entries(
-                bigips, update_loadbalancer, update_members)
+            fdb_handle_method(bigips, update_loadbalancer, update_members)
 
         LOG.debug("update_bigip_l2 complete")
 

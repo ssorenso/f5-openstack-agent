@@ -24,6 +24,7 @@ import socket
 
 from requests import HTTPError
 
+import f5_openstack_agent.lbaasv2.drivers.bigip.l2_service as l2_service
 import f5_openstack_agent.lbaasv2.drivers.bigip.tunnels.decorators \
     as wrapper
 # import f5_openstack_agent.lbaasv2.drivers.bigip.tunnels.tunnel as tunnel_mod
@@ -45,12 +46,12 @@ class Fdb(object):
 
     @wrapper.add_logger
     def __init__(self, ip_address, vtep_mac, vtep_ip, network_id,
-                 network_type, segment_id):
+                 network_type, segment_id, force=False):
         self.network_id = network_id
         self.network_type = network_type
         self.segment_id = segment_id
         self.mac_address = vtep_mac
-        self.ip_address = ip_address
+        self._set_ip_address(ip_address, force=force)
         self.vtep_ip = vtep_ip
         self.__partitions = []
         self.__hosts = []
@@ -345,6 +346,48 @@ class FdbBuilder(object):
         tunnel_handler.notify_vtep_existence(hosts)
 
     @classmethod
+    def handle_fdbs_by_loadbalancer_and_members(
+            cls, bigip, tunnel, loadbalancer, members, remove=False):
+        """Creates a list of fdb's from a loadbalancer/members values pair
+
+        When network_service determines that a loadbalancer is new and with it
+        a list of members, this will take that loadbalancer and list of
+        members and add the resulting fdbs to the provided tunnel.
+
+        Args:
+            bigips - [f5.bigip.ManagementRoot] object instances
+            tunnel - Tunnel object instance
+            loadbalancer - service request's loadbalancer object
+            members - list of member objects
+        Returns:
+            [Fdb] object instances
+        """
+        vtep_key = "{}_vteps".format(tunnel.tunnel_type)
+
+        def create_fdb_by_vtep(tunnel, network, ip_address, mac,
+                               vtep_address, force=False):
+            fdb = Fdb('', mac, vtep_address, network['id'],
+                      tunnel.tunnel_type, tunnel.segment_id, force=force)
+            return fdb
+
+        fdbs = list()
+        network = loadbalancer['network']
+        for vtep_address in loadbalancer[vtep_key]:
+            fake_mac = l2_service.get_tunnel_fake_mac(network, vtep_address)
+            fdbs.append(
+                create_fdb_by_vtep(tunnel, network, '', fake_mac,
+                                   vtep_address, force=True))
+        for member in members:
+            mac = member['port']['mac_address']
+            addr = member['address']
+            for vtep_address in member[vtep_key]:
+                fdbs.append(
+                    create_fdb_by_vtep(
+                        tunnel, network, addr, mac, vtep_address))
+        tunnel_method = tunnel.remove_fdbs if remove else tunnel.add_fdbs
+        tunnel_method(bigip, fdbs)
+
+    @classmethod
     def create_fdbs_from_bigip_records(cls, bigip, records, tunnel):
         """Grab all records of object aware in the tunnel (added fdb_entries)
 
@@ -431,6 +474,9 @@ class FdbBuilder(object):
         tunnel.remove_fdbs(bigip, fdbs)
 
     @classmethod
+    @wrapper.http_error(
+        warn={'400': "Attempted delete on non-existent arp",
+              '404': "Attempted delete on non-existent arp"})
     def remove_fdb_from_arp(cls, bigip, tunnel, fdbs):
         """Removes the list of fdb vteps from the provided BIG-IP
 
@@ -443,7 +489,8 @@ class FdbBuilder(object):
             fdbs - one or more fdbs (list(Fdb) or Fdb)
         """
         if isinstance(fdbs, list):
-            tunnel.remove_fdbs(bigip, fdbs)
+            for fdb in fdbs:
+                cls.remove_fdb_from_arp(bigip, tunnel, fdb)
         elif isinstance(fdbs, Fdb):
             cls.__tm_arp(bigip, tunnel, fdbs, 'delete')
         else:
