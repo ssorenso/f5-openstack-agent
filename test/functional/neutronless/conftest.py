@@ -35,6 +35,7 @@ from inspect import currentframe as cf
 from inspect import getframeinfo as gfi
 from inspect import getouterframes as gof
 import json
+import mock
 import os
 from os.path import dirname as opd
 from os.path import join as opj
@@ -155,7 +156,8 @@ class TestConfig(object):
 
         icd = iControlDriver(ConfFake(self.OSLO_CONF),
                              registerOpts=False)
-        icd.tunnel_handler = TunnelHandler(1, 2, 3)
+        icd.tunnel_handler = TunnelHandler(mock.Mock(), mock.Mock(),
+                                           mock.Mock())
 
         icd.plugin_rpc = self.fake_plugin_rpc()
         icd.connect()
@@ -428,7 +430,7 @@ def fake_plugin_rpc(services):
 
 @pytest.fixture
 def fake_tunnel_handler():
-    return TunnelHandler(1, 2, 3)
+    return TunnelHandler(mock.Mock(), mock.Mock(), mock.Mock())
 
 
 @pytest.fixture
